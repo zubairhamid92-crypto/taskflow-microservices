@@ -10,10 +10,13 @@ import organizationRepository from "../organizations/repository";
 import { LoginUser, RegisterUser } from "./interface";
 import { generateToken } from "../../shared/utils/jwt";
 import authRepository from "./repository";
+import { publish } from "../../../../shared/rabbitmq/src/publisher";
+
 
 class AuthService {
 
     async register(data: RegisterUser) {
+         console.log("hello before")
         const organizationExists =
             await organizationRepository.findByEmail(data.organizationEmail);
 
@@ -65,7 +68,23 @@ class AuthService {
                 },
 
             });
+           
+            await publish(
+            "user.exchange",
+            "user.registered",
+            {
+                event: "user.registered",
 
+                userId: user.id,
+
+                organizationId: organization.id,
+
+                email: user.email,
+
+                firstName: user.firstName
+            }
+        );
+        console.log("hello after")
             return {
 
                 organization,
